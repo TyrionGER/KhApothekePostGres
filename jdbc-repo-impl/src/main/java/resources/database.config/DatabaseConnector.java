@@ -187,6 +187,9 @@ public class DatabaseConnector implements Repository {
         }
     }
 
+
+
+
     @Override
     public void save(Order order) throws SQLException {
         if (exists("\"Order\"", order.id().value())) {
@@ -306,8 +309,7 @@ public class DatabaseConnector implements Repository {
             result.getInt("amount"),
             result.getDate("date"),
             new Reference<>(result.getString("medication_id")),
-            new Reference<>(result.getString("supplier_id")),
-            new Reference<>(result.getString("compartment_id"))
+            new Reference<>(result.getString("supplier_id"))
         );
     }
     
@@ -361,6 +363,8 @@ public class DatabaseConnector implements Repository {
         }
     }
 
+    
+
     public Orderitem readOrderitem(ResultSet result) throws SQLException {
         return new Orderitem(
             new Id<>(result.getString("id")),
@@ -371,6 +375,7 @@ public class DatabaseConnector implements Repository {
             new Reference<>(result.getString("order_id"))
         );
     }
+
     
     @Override
     public Optional<Orderitem> getOrderitem(Id<Orderitem> id) {
@@ -390,9 +395,26 @@ public class DatabaseConnector implements Repository {
             throw new RuntimeException(e);
         }
     }
+
+/* brauchen wir das?
+    @Override
+    public void deleteStock(Id<Stock> id) {
+        String sql = "DELETE FROM Stock WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, id.value());
+            pstmt.executeUpdate();
+        }
+    }
+*/  
     
+
+
+
     @Override
     public Id<Compartment> compartmentId() {
+
+
+
         return new Id<>(java.util.UUID.randomUUID().toString());
     }
 
@@ -523,6 +545,23 @@ public List<Orderitem> get(Orderitem.Filter filter) {
     }
 }
 
+
+public List<Compartment> getCompartmentsWithMedication() {
+    String query = "SELECT * FROM Compartment WHERE medication_id IS NOT NULL";
+
+    try (var resultSet = conn.createStatement().executeQuery(query)) {
+        List<Compartment> compartments = new ArrayList<>();
+
+        while (resultSet.next()) {
+            compartments.add(readCompartment(resultSet));
+        }
+
+        return compartments;
+    } catch (SQLException e) {
+        throw new RuntimeException(e);
+    }
+}
+
 public List<Map<String, Object>> getMedicationInventory() {
     String query = "SELECT m.name, c.row, c.column, s.amount " +
                    "FROM Medication m " +
@@ -572,6 +611,28 @@ public List<Medication> getMedicationsWithLowStock(int threshold) {
         throw new RuntimeException(e);
     }
 }
+
+public List<Medication> getMedicationsWithExpiredStock() {
+    String query = "SELECT m.id, m.name, s.expirationdate " +
+                   "FROM Medication m " +
+                   "JOIN Stock s ON m.id = s.medication_id " +
+                   "WHERE s.expirationdate < CURRENT_DATE";
+
+    try (var resultSet = conn.createStatement().executeQuery(query)) {
+        List<Medication> expiredStockMedications = new ArrayList<>();
+
+        while (resultSet.next()) {
+            String id = resultSet.getString("id");
+            String name = resultSet.getString("name");
+            Date expirationDate = resultSet.getDate("expirationdate");
+            Medication medication = new Medication(id, name, expirationDate);
+            expiredStockMedications.add(medication);
+        }
+
+        return expiredStockMedications;
+    } catch (SQLException e) {
+        throw new RuntimeException(e);
+    }
 
 
 
