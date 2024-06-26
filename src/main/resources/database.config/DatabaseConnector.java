@@ -2,6 +2,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import static database.config.SQL.*;
 
 public class DatabaseConnector {
     private final Connection conn;
@@ -342,6 +343,62 @@ public class DatabaseConnector {
         try (PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, id);
             stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // Method to view the medication inventory
+    public List<MedicationStock> getMedicationStock() {
+        var query = SQL.SELECT("*")
+            .FROM("Stock s")
+            .JOIN("medication m ON s.medication_id = m.id")
+            .JOIN("Compartment c ON s.compartment_id = c.id")
+            .ORDER_BY("m.displayname")
+            .toString();
+
+        try (var resultSet = conn.createStatement().executeQuery(query)) {
+            var stockList = new ArrayList<MedicationStock>();
+
+            while (resultSet.next()) {
+                var stock = new MedicationStock(
+                    resultSet.getString("displayname"),
+                    resultSet.getInt("amount"),
+                    resultSet.getInt("row"),
+                    resultSet.getString("column")
+                );
+                stockList.add(stock);
+            }
+
+            return stockList;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // Method to view medications with less than N units
+    public List<Medication> getMedicationsBelowThreshold(int threshold) {
+        var query = SQL.SELECT("*")
+            .FROM("Stock s")
+            .JOIN("medication m ON s.medication_id = m.id")
+            .WHERE(SQL.COLUMN("s.amount").lessThan(threshold))
+            .ORDER_BY("m.displayname")
+            .toString();
+
+        try (var resultSet = conn.createStatement().executeQuery(query)) {
+            var medications = new ArrayList<Medication>();
+
+            while (resultSet.next()) {
+                var medication = new Medication(
+                    resultSet.getString("displayname"),
+                    resultSet.getInt("amount")
+                );
+                medications.add(medication);
+            }
+
+            return medications;
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
