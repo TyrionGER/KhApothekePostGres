@@ -1,19 +1,20 @@
+package khApo;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 public record Compartment(
         Id <Compartment>id,
-        Id<Medication> medication,
         int row,
         String column) {
+
     Compartment updateWith(
             int newrow,
             String newcolumn
     ) {
         return new Compartment(
                 this.id,
-                this.medication,
                 newrow,
                 newcolumn
         );
@@ -43,8 +44,8 @@ public record Compartment(
     {}
     public static record Filter
             (
-                    int row,
-                    String column)
+                    Optional<Integer> row,
+                    Optional<String> column)
     {}
 
     public static interface Operations

@@ -1,9 +1,13 @@
+package resources.database.config;
+
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Stream;
+
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toList;
 
@@ -257,7 +261,7 @@ public abstract class SQL
 
     @SafeVarargs
     public final UpdateBuilder WHERE(Criterion... criteria){
-      this.criteria.addAll(Stream.of(criteria).collect(toList())); 
+      this.criteria.addAll(Stream.of(criteria).collect(toList()));
       return this;
     }
 

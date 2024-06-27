@@ -1,15 +1,16 @@
-import java.lang.ref.Reference;
+package khApo;
+
+
 import java.util.List;
 import java.util.Optional;
 
 public record Orderitem(
         Id<Orderitem> id,
+        Orderitem.status status,
         int amount,
         Reference<Medication> medication,
-        Orderitem.status status,
-        Reference<Order> order,
-        String note) {
-    enum status {
+        Reference<Order> order) {
+    public enum status {
         IN_BEARBEITUNG("in bearbeitung"),
         BESTELLUNG_AUFGEGEBEN("Bestellung aufgegeben"),
         BESTELLUNG_AKZEPTIERT("Bestellung akzeptiert"),
@@ -24,10 +25,9 @@ public record Orderitem(
         }
     }
     public static record Filter(
-            Id<Medication> id,
-
-            Reference<Order> order,
-            status status
+            Optional<Reference<Order>> order,
+            Optional<status> status,
+            Optional<Reference<Medication>> medication
     ) {
     }
 
@@ -38,11 +38,10 @@ public record Orderitem(
     ) {
         return new Orderitem(
                 this.id,
+                newstatus,
                 newamount,
                 this.medication,
-                newstatus,
-                this.order,
-                newnote
+                this.order
         );
     }
 

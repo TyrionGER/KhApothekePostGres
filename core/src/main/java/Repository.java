@@ -1,3 +1,6 @@
+package khApo;
+
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -8,21 +11,21 @@ public interface Repository {
 
     Optional<Compartment> getCompartment(Id<Compartment> id);
 
-    void save(Stock stock) throws SQLException;
+    void save(Stock stock) throws Exception;
     Optional<Stock> getStock(Id<Stock> id);
 
     void delete(Id<Order> id);
-    void deletecompartment(Id<Compartment>id);
+    void deletecompartment(Id<Compartment>id) throws SQLException;
 
     List<Stock> get(Stock.Filter filter);
 
     Id<Compartment> compartmentId();
 
-    void save(Compartment compartment) throws SQLException;
+    void save(Compartment compartment) throws Exception;
 
     List<Compartment> get(Compartment.Filter filter);
 
-    void save(Orderitem orderitem) throws SQLException;
+    void save(Orderitem orderitem) throws Exception;
 
     List<Orderitem> get(Orderitem.Filter filter);
 
@@ -30,7 +33,7 @@ public interface Repository {
     Id<Orderitem> orderitemId();
     Optional<Orderitem> getOrderitem(Id<Orderitem> id);
 
-    void save(Order order) throws SQLException;
+    void save(Order order) throws Exception;
 
     List<Order> get(Order.Filter filter);
 

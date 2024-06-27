@@ -1,3 +1,5 @@
+package khApo;
+
 public record Medication(
         Id<Medication> id,
         String name,

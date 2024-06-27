@@ -1,18 +1,19 @@
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.List;
-import java.util.Optional;
-import core.src.main.java.*;
+package resources.database.config;
+
+import java.sql.*;
+import java.sql.Date;
+import java.util.*;
+
+import khApo.*;
+
+import static resources.database.config.SQL.*;
+
 
 public class DatabaseConnector implements Repository {
     private final Connection conn;
     private static final String DB_URL = "jdbc:postgresql://localhost:5432/KhApoDB";
 
-    private DatabaseConnector(Connection conn) {
+    private DatabaseConnector(Connection conn) throws SQLException {
         this.conn = conn;
     }
 
@@ -61,48 +62,43 @@ public class DatabaseConnector implements Repository {
             );
             """;
     private static final String CREATE_TABLE_ORDERITEM = """
-        CREATE TABLE IF NOT EXISTS orderitem (
+        CREATE TABLE IF NOT EXISTS Orderitem (
             id            varchar not null
                 constraint orderitem_pk
                     primary key,
             status        varchar not null,
+            amount        integer not null,
             medication_id varchar not null
                 constraint orderitem_medication_id_fk
                     references medication,
-            date          date    not null,
-            amount        integer not null
+            order_id      varchar not null
             );
             """;
     private static final String CREATE_TABLE_ORDER = """
-        CREATE TABLE IF NOT EXISTS order (
+        CREATE TABLE IF NOT EXISTS Order (
             id           varchar not null
                 constraint order_pk
                     primary key,
-            orderitem_id varchar not null
-                constraint order_orderitem_id_fk
-                    references orderitem,
             supplier_id  varchar not null
                 constraint order_supplier_id_fk
                     references supplier,
             amount       integer,
-            price        numeric not null
+            price        numeric,
             );
             """;
 
     private static final String CREATE_TABLE_MEDICATION = """
-        CREATE TABLE IF NOT EXISTS medication (
+        CREATE TABLE IF NOT EXISTS Medication (
             id          varchar not null
                 constraint medication_pk
                     primary key,
             displayname varchar,
-            manufacturer varchar,
-
             atc         integer
             );
             """;
 
     private static final String CREATE_TABLE_SUPPLIER = """
-        CREATE TABLE IF NOT EXISTS supplier (
+        CREATE TABLE IF NOT EXISTS Supplier (
             id       varchar not null
                 constraint supplier_pk
                     primary key,
@@ -139,52 +135,50 @@ public class DatabaseConnector implements Repository {
     }
 
     @Override
-    public void save(Compartment compartment) throws SQLException {
-        if (exists("Compartment", compartment.id().value())) {
-            String sql = "UPDATE Compartment SET row = ?, column = ?, medication_id = ? WHERE id = ?";
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setInt(1, compartment.row());
-                pstmt.setString(2, compartment.column());
-                pstmt.setString(3, compartment.medication().value());
-                pstmt.setString(4, compartment.id().value());
-                pstmt.executeUpdate();
-            }
-        } else {
-            String sql = "INSERT INTO Compartment (id, row, column, medication_id) VALUES (?, ?, ?, ?)";
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, compartment.id().value());
-                pstmt.setInt(2, compartment.row());
-                pstmt.setString(3, compartment.column());
-                pstmt.setString(4, compartment.medication().value());
-                pstmt.executeUpdate();
-            }
+    public void save(Compartment compartment) throws Exception {
+
+        var query =
+                exists("Compartment", compartment.id().value()) ?
+                        UPDATE("Compartment")
+                                .WHERE("id", compartment.id())
+                                .SET("row", compartment.row())
+                                .SET("column", compartment.column())
+                        :
+                        INSERT_INTO("Compartment")
+                                .VALUE("id", compartment.id())
+                                .VALUE("row", compartment.row())
+                                .VALUE("column", compartment.column());
+
+        try (var stmt = conn.createStatement()) {
+            stmt.executeUpdate(query.toString());
         }
-    }
+
+        }
+
+
+
+
 
     @Override
     public void save(Orderitem orderitem) throws SQLException {
-        if (exists("Orderitem", orderitem.id().value())) {
-            String sql = "UPDATE Orderitem SET amount = ?, status = ?, note = ?, medication_id = ?, order_id = ? WHERE id = ?";
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setInt(1, orderitem.amount());
-                pstmt.setString(2, orderitem.status().name());
-                pstmt.setString(3, orderitem.note());
-                pstmt.setString(4, orderitem.medication().value());
-                pstmt.setString(5, orderitem.order().value());
-                pstmt.setString(6, orderitem.id().value());
-                pstmt.executeUpdate();
-            }
-        } else {
-            String sql = "INSERT INTO Orderitem (id, amount, status, note, medication_id, order_id) VALUES (?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, orderitem.id().value());
-                pstmt.setInt(2, orderitem.amount());
-                pstmt.setString(3, orderitem.status().name());
-                pstmt.setString(4, orderitem.note());
-                pstmt.setString(5, orderitem.medication().value());
-                pstmt.setString(6, orderitem.order().value());
-                pstmt.executeUpdate();
-            }
+        var query =
+                exists("Orderitem", orderitem.id().value()) ?
+                        UPDATE("Orderitem")
+                                .WHERE("id", orderitem.id().value())
+                                .SET("status", orderitem.status())
+                                .SET("medication_id", orderitem.medication())
+                                .SET("amount", orderitem.amount())
+                                .SET("order_id", orderitem.order())
+                        :
+
+                        INSERT_INTO("Orderitem")
+                                .VALUE("id", orderitem.id())
+                                .VALUE("amount", orderitem.amount())
+                                .VALUE("status", orderitem.status())
+                                .VALUE("medication_id", orderitem.medication());
+
+        try (var stmt = conn.createStatement()) {
+            stmt.executeUpdate(query.toString());
         }
     }
 
@@ -193,86 +187,74 @@ public class DatabaseConnector implements Repository {
 
     @Override
     public void save(Order order) throws SQLException {
-        if (exists("\"Order\"", order.id().value())) {
-            String sql = "UPDATE \"Order\" SET name = ?, amount = ?, date = ?, medication_id = ?, supplier_id = ?, compartment_id = ? WHERE id = ?";
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, order.name());
-                pstmt.setInt(2, order.amount());
-                pstmt.setDate(3, new java.sql.Date(order.date().getTime()));
-                pstmt.setString(4, order.medication().value());
-                pstmt.setString(5, order.supplier().value());
-                pstmt.setString(6, order.compartment().value());
-                pstmt.setString(7, order.id().value());
-                pstmt.executeUpdate();
-            }
-        } else {
-            String sql = "INSERT INTO \"Order\" (id, name, amount, date, medication_id, supplier_id, compartment_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, order.id().value());
-                pstmt.setString(2, order.name());
-                pstmt.setInt(3, order.amount());
-                pstmt.setDate(4, new java.sql.Date(order.date().getTime()));
-                pstmt.setString(5, order.medication().value());
-                pstmt.setString(6, order.supplier().value());
-                pstmt.setString(7, order.compartment().value());
-                pstmt.executeUpdate();
-            }
+        var query =
+                exists("Order", order.id().value()) ?
+                        UPDATE("Order")
+                                .WHERE("id", order.id())
+                                .SET("supplier_id", order.supplier())
+                                .SET("amount", order.amount())
+                                .SET("price", order.price())
+
+                        :
+                        INSERT_INTO("Order")
+                                .VALUE("id", order.id().value())
+                                .VALUE("supplier_id", order.supplier())
+                                .VALUE("amount", order.amount())
+                                .VALUE("price", order.price());
+
+        try (var stmt = conn.createStatement()) {
+            stmt.executeUpdate(query.toString());
         }
     }
 
     @Override
     public void save(Stock stock) throws SQLException {
-        if (exists("Stock", stock.id().value())) {
-            String sql = "UPDATE Stock SET name = ?, amount = ?, date = ?, note = ?, medication_id = ?, compartment_id = ? WHERE id = ?";
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, stock.name());
-                pstmt.setInt(2, stock.amount());
-                pstmt.setDate(3, stock.date());
-                pstmt.setString(4, stock.note());
-                pstmt.setString(5, stock.medication().value());
-                pstmt.setString(6, stock.compartment().value());
-                pstmt.setString(7, stock.id().value());
-                pstmt.executeUpdate();
-            }
-        } else {
-            String sql = "INSERT INTO Stock (id, name, amount, date, note, medication_id, compartment_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, stock.id().value());
-                pstmt.setString(2, stock.name());
-                pstmt.setInt(3, stock.amount());
-                pstmt.setDate(4, stock.date());
-                pstmt.setString(5, stock.note());
-                pstmt.setString(6, stock.medication().value());
-                pstmt.setString(7, stock.compartment().value());
-                pstmt.executeUpdate();
-            }
+        var query =
+                exists("Stock", stock.id().value()) ?
+                        UPDATE("Stock")
+                                .WHERE("id", stock.id())
+                                .SET("amount", stock.amount())
+                                .SET("expirationdate", stock.expirationDate())
+                                .SET("medication_id", stock.medication())
+                                .SET("compartment_id", stock.compartment())
+                        :
+                        INSERT_INTO("Stock")
+                                .VALUE("id", stock.id().value())
+                                .VALUE("amount", stock.amount())
+                                .VALUE("expirationdate", stock.expirationDate())
+                                .VALUE("medication_id", stock.medication())
+                                .VALUE("compartment_id", stock.compartment());
+
+        try (var stmt = conn.createStatement()) {
+            stmt.executeUpdate(query.toString());
         }
     }
 
     @Override
-    public void deletecompartment(Id<Compartment> id) {
-        String sql = "DELETE FROM Compartment WHERE id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, id.value());
-            pstmt.executeUpdate();
+    public void deletecompartment(Id<Compartment> id) throws SQLException {
+        var query = DELETE_FROM("Compartment").WHERE("id", id.value()).toString();
+        try (var stmt = conn.createStatement()) {
+            stmt.executeUpdate(query);
         }
     }
 
     @Override
     public void deleteorderitem(Id<Orderitem> id) {
-        String sql = "DELETE FROM Orderitem WHERE id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, id.value());
-            pstmt.executeUpdate();
+        var query = DELETE_FROM("Orderitem").WHERE("id", id.value()).toString();
+        try (var stmt = conn.createStatement()) {
+            stmt.executeUpdate(query);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public void delete(Id<Order> id) {
-        String sql = "DELETE FROM \"Order\" WHERE id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, id.value());
-            pstmt.executeUpdate();
+        var query = DELETE_FROM("Order").WHERE("id", id.value()).toString();
+        try (var stmt = conn.createStatement()) {
+            stmt.executeUpdate(query);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -284,49 +266,29 @@ public class DatabaseConnector implements Repository {
         );
     }
 
-    @Override
-    public Optional<Compartment> getCompartment(Id<Compartment> id) {
-        var query = 
-            SQL.SELECT("*")
-                .FROM("Compartment")
-                .WHERE("id", id.value())
-                .toString();
-    
-        try (
-            var result = conn.createStatement().executeQuery(query)
-        ) {
-            return result.next() ? 
-                Optional.of(readCompartment(result)) : 
-                Optional.empty();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public Order readOrder(ResultSet result) throws SQLException {
         return new Order(
             new Id<>(result.getString("id")),
-            result.getString("name"),
+            Reference.to(result.getString("supplier_id")),
             result.getInt("amount"),
-            result.getDate("date"),
-            new Reference<>(result.getString("medication_id")),
-            new Reference<>(result.getString("supplier_id"))
+            result.getDouble("price")
+
         );
     }
-    
+
     @Override
     public Optional<Order> getOrder(Id<Order> id) {
-        var query = 
+        var query =
             SQL.SELECT("*")
-                .FROM("\"Order\"")
+                .FROM("\"khApo.Order\"")
                 .WHERE("id", id.value())
                 .toString();
-    
+
         try (
             var result = conn.createStatement().executeQuery(query)
         ) {
-            return result.next() ? 
-                Optional.of(readOrder(result)) : 
+            return result.next() ?
+                Optional.of(readOrder(result)) :
                 Optional.empty();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -340,57 +302,57 @@ public class DatabaseConnector implements Repository {
             result.getInt("amount"),
             result.getDate("date"),
             result.getString("note"),
-            new Reference<>(result.getString("medication_id")),
-            new Reference<>(result.getString("compartment_id"))
+            Reference.to(result.getString("medication_id")),
+            Reference.to(result.getString("compartment_id"))
         );
     }
-    
+
     @Override
     public Optional<Stock> getStock(Id<Stock> id) {
-        var query = 
+        var query =
             SQL.SELECT("*")
-                .FROM("Stock")
+                .FROM("khApo.Stock")
                 .WHERE("id", id.value())
                 .toString();
-    
+
         try (
             var result = conn.createStatement().executeQuery(query)
         ) {
-            return result.next() ? 
-                Optional.of(readStock(result)) : 
+            return result.next() ?
+                Optional.of(readStock(result)) :
                 Optional.empty();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    
+
+
 
     public Orderitem readOrderitem(ResultSet result) throws SQLException {
         return new Orderitem(
             new Id<>(result.getString("id")),
-            result.getInt("amount"),
-            Orderitem.Status.valueOf(result.getString("status")),
-            result.getString("note"),
-            new Reference<>(result.getString("medication_id")),
-            new Reference<>(result.getString("order_id"))
+            Orderitem.status.valueOf(result.getString("status")),
+                result.getInt("amount"),
+            Reference.to(result.getString("medication_id")),
+            Reference.to(result.getString("order_id"))
         );
     }
 
-    
+
     @Override
     public Optional<Orderitem> getOrderitem(Id<Orderitem> id) {
-        var query = 
+        var query =
             SQL.SELECT("*")
-                .FROM("Orderitem")
+                .FROM("khApo.Orderitem")
                 .WHERE("id", id.value())
                 .toString();
-    
+
         try (
             var result = conn.createStatement().executeQuery(query)
         ) {
-            return result.next() ? 
-                Optional.of(readOrderitem(result)) : 
+            return result.next() ?
+                Optional.of(readOrderitem(result)) :
                 Optional.empty();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -398,6 +360,24 @@ public class DatabaseConnector implements Repository {
     }
 
 
+    @Override
+    public Optional<Compartment> getCompartment(Id<Compartment> id) {
+        var query =
+                SQL.SELECT("*")
+                        .FROM("khApo.Compartment")
+                        .WHERE("id", id.value())
+                        .toString();
+
+        try (
+                var result = conn.createStatement().executeQuery(query)
+        ) {
+            return result.next() ?
+                    Optional.of(readCompartment(result)) :
+                    Optional.empty();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public Id<Compartment> compartmentId() {
@@ -420,78 +400,69 @@ public class DatabaseConnector implements Repository {
     @Override
     public List<Compartment> get(Compartment.Filter filter) {
         var query = SQL.SELECT("*")
-            .FROM("Compartment")
-            .ORDER_BY("id");
-    
-        if (!Objects.equals(filter.row(), null)) {
-            query = query.WHERE("row", filter.row());
-        }
-    
-        if (filter.column() != null && !filter.column().isEmpty()) {
-            query = query.WHERE(COLUMN("column").like(filter.column()));
-        }
-    
+                .FROM("khApo.Compartment")
+                .ORDER_BY("id");
+
+        filter.row().ifPresent(
+                ref -> query.WHERE("row", ref));
+        filter.column().ifPresent(
+                ref -> query.WHERE("column", ref));
+
+
         try (var resultSet = conn.createStatement().executeQuery(query.toString())) {
             var compartments = new ArrayList<Compartment>();
-    
+
             while (resultSet.next()) {
                 compartments.add(readCompartment(resultSet));
             }
-    
+
             return compartments;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
-    
+
 
     @Override
     public List<Order> get(Order.Filter filter) {
-        var query = SQL.SELECT("*")
-            .FROM("\"Order\"")
+        var query = SELECT("*")
+            .FROM("\"khApo.Order\"")
             .ORDER_BY("date");
-    
-        if (filter.name() != null && !filter.name().isEmpty()) {
-            query = query.WHERE("name", filter.name());
-        }
-    
-        if (filter.period() != null) {
-            if (filter.period().start() != null) {
-                query = query.WHERE(COLUMN("date").greaterThanOrEqual(filter.period().start()));
-            }
-            filter.period().end().ifPresent(end -> query.WHERE(COLUMN("date").lessThanOrEqual(end)));
-        }
-    
+
+        filter.supplier().ifPresent(
+            ref -> query.WHERE("supplier_id", ref.id().value()));
+
+
         try (var resultSet = conn.createStatement().executeQuery(query.toString())) {
             var orders = new ArrayList<Order>();
-    
+
             while (resultSet.next()) {
                 orders.add(readOrder(resultSet));
             }
-    
+
             return orders;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
-    
+
 
 @Override
 public List<Stock> get(Stock.Filter filter) {
     var query = SQL.SELECT("*")
-        .FROM("Stock")
+        .FROM("khApo.Stock")
         .ORDER_BY("date");
+    filter.compartment().ifPresent(
+            ref -> query.WHERE("compartment", ref.id().value()));
 
-    if (filter.name() != null && !filter.name().isEmpty()) {
-        query = query.WHERE("name", filter.name());
-    }
+    filter.amount().ifPresent(
+            ref -> query.WHERE("amount", ref.id().value()));
 
-    if (filter.period() != null) {
-        if (filter.period().start() != null) {
-            query = query.WHERE(COLUMN("date").greaterThanOrEqual(filter.period().start()));
-        }
-        filter.period().end().ifPresent(end -> query.WHERE(COLUMN("date").lessThanOrEqual(end)));
-    }
+    filter.id().ifPresent(
+            id -> query.WHERE("medication_id", id.value()));
+
+
+
 
     try (var resultSet = conn.createStatement().executeQuery(query.toString())) {
         var stocks = new ArrayList<Stock>();
@@ -510,16 +481,16 @@ public List<Stock> get(Stock.Filter filter) {
 @Override
 public List<Orderitem> get(Orderitem.Filter filter) {
     var query = SQL.SELECT("*")
-        .FROM("Orderitem")
+        .FROM("khApo.Orderitem")
         .ORDER_BY("id");
 
-    if (filter.status() != null) {
-        query = query.WHERE("status", filter.status().name());
-    }
+    filter.order().ifPresent(
+            ref -> query.WHERE("order_id", ref.id().value()));
 
-    if (filter.medication() != null && filter.medication().value() != null && !filter.medication().value().isEmpty()) {
-        query = query.WHERE(COLUMN("medication_id").equal(filter.medication().value()));
-    }
+    filter.status().ifPresent(
+            status -> query.WHERE("status", status.name()));
+    filter.medication().ifPresent(
+            ref -> query.WHERE("medication_id", ref.id().value()));
 
     try (var resultSet = conn.createStatement().executeQuery(query.toString())) {
         var orderitems = new ArrayList<Orderitem>();
@@ -558,30 +529,17 @@ public List<Map<String, Object>> getMedicationInventory() {
     }
 }
 
+//TODO: Implement the following methods
+
 public List<Medication> getMedicationsWithLowStock(int threshold) {
     String query = "SELECT m.id, m.name, s.amount " +
                    "FROM Medication m " +
                    "JOIN Stock s ON m.id = s.medication_id " +
                    "WHERE s.amount < ?";
 
-    try (PreparedStatement pstmt = conn.prepareStatement(query)) {
-        pstmt.setInt(1, threshold);
-        try (var resultSet = pstmt.executeQuery()) {
-            List<Medication> lowStockMedications = new ArrayList<>();
+    List<Medication> medicationsWithLowStock = new ArrayList<>();
 
-            while (resultSet.next()) {
-                String id = resultSet.getString("id");
-                String name = resultSet.getString("name");
-                int amount = resultSet.getInt("amount");
-                Medication medication = new Medication(id, name, amount);
-                lowStockMedications.add(medication);
-            }
-
-            return lowStockMedications;
-        }
-    } catch (SQLException e) {
-        throw new RuntimeException(e);
-    }
+    return medicationsWithLowStock;
 }
 
 public List<Medication> getMedicationsWithExpiredStock() {
@@ -590,21 +548,9 @@ public List<Medication> getMedicationsWithExpiredStock() {
                    "JOIN Stock s ON m.id = s.medication_id " +
                    "WHERE s.expirationdate < CURRENT_DATE";
 
-    try (var resultSet = conn.createStatement().executeQuery(query)) {
-        List<Medication> expiredStockMedications = new ArrayList<>();
+    List<Medication> medicationsWithExpiredStock = new ArrayList<>();
 
-        while (resultSet.next()) {
-            String id = resultSet.getString("id");
-            String name = resultSet.getString("name");
-            Date expirationDate = resultSet.getDate("expirationdate");
-            Medication medication = new Medication(id, name, expirationDate);
-            expiredStockMedications.add(medication);
-        }
-
-        return expiredStockMedications;
-    } catch (SQLException e) {
-        throw new RuntimeException(e);
-    }
+    return medicationsWithExpiredStock;
 
 
 }

@@ -1,50 +1,42 @@
-import java.lang.ref.Reference;
+package khApo;
+
+
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 public record Order(
         Id<Order> id,
-        String name,
-        int amount,
-        Date date,
-        Reference<Medication> medication,
         Reference<Supplier> supplier,
-        Reference<Compartment> compartment) {
+        int amount,
+        double price
+        ) {
     public static sealed interface Command permits SaveList,SendOrder,DeleteOrder {}
     public static record SaveList
             (
                     Id<Order> id,
-                    String name,
-                    int amount,
-                    Date date,
-                    Reference<Medication> medication,
                     Reference<Supplier> supplier,
-                    Reference<Compartment> compartment
+                    int amount,
+                    double price
             ) implements Command
     {}
     public static record SendOrder
             (
                     Id<Order> id,
-                    String name,
-                    int amount,
-                    Reference<Medication> medication,
                     Reference<Supplier> supplier,
-                    Reference<Compartment> compartment
+                    int amount,
+                    double price
             ) implements Command
     {}
     public static record DeleteOrder
             (
-                    Id<Order>id,
-                    String notes,
-                    Date date
+                    Id<Order>id
+
             ) implements Command
     {}
     public static record Filter
             (
-                    Reference<Medication> medication,
-                    Reference<Supplier> supplier,
-                    Date date
+                    Optional<Reference<Supplier>> supplier
 
             )
     {}

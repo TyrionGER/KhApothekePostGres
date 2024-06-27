@@ -1,4 +1,5 @@
-import java.lang.ref.Reference;
+package khApo;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -7,7 +8,7 @@ public record Stock(
         Id<Stock> id,
         String name,
         int amount,
-        Date date,
+        Date expirationDate,
         String note,
 
         Reference<Medication> medication,
@@ -46,10 +47,9 @@ public record Stock(
 
     public static record Filter
             (
-                    Reference<Compartment> compartment,
+                    Optional<Reference<Compartment>> compartment,
                     Optional<Medication> amount,
-                    Optional<Medication> expirationDate,
-                    Id<Medication> id)
+                    Optional<Id<Medication>> id)
     {}
     public static interface Operations
     {

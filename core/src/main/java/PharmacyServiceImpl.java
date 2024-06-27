@@ -1,18 +1,20 @@
+package khApo;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.Date;
 
-//// Die Klasse PharmacyServiceImpl implementiert das Interface PharmacyService
+//// Die Klasse khApo.PharmacyServiceImpl implementiert das Interface khApo.PharmacyService
 final class PharmacyServiceImpl implements PharmacyService {
 
-    private final Repository repository;//Repository-Instanz, die für Datenzugriff verwendet wird
+    private final Repository repository;//khApo.Repository-Instanz, die für Datenzugriff verwendet wird
 
-    // Privater Konstruktor, der das Repository initialisiert
+    // Privater Konstruktor, der das khApo.Repository initialisiert
     private PharmacyServiceImpl(Repository repository) {
         this.repository = repository;
     }
 
-    // Singleton-Instanz von PharmacyServiceImpl
+    // Singleton-Instanz von khApo.PharmacyServiceImpl
     private static final PharmacyServiceImpl INSTANCE =
             new PharmacyServiceImpl(
                     Repository.loadInstance()
@@ -33,7 +35,6 @@ final class PharmacyServiceImpl implements PharmacyService {
             case Compartment.AddCompartment add -> {
                 var compartment = new Compartment(
                         repository.compartmentId(),
-                        add.medication(),
                         add.row(),
                         add.column()
                 );
@@ -56,7 +57,7 @@ final class PharmacyServiceImpl implements PharmacyService {
                 var deletecompartment = repository.getCompartment(deleteCompartment.id())
                         .orElseThrow(() -> new IllegalArgumentException("Invalid Message ID"));
                 repository.deletecompartment(deleteCompartment.id());
-                repository .deletecompartment(deleteCompartment.id());
+                repository.deletecompartment(deleteCompartment.id());
                 yield deletecompartment;
 
             }
@@ -67,48 +68,42 @@ final class PharmacyServiceImpl implements PharmacyService {
     public Order process(Order.Command cmd) throws Exception {
         return switch (cmd) {
             case Order.SaveList save -> {
-                // Ensure that the referenced Order exists and is still active
+                // Ensure that the referenced khApo.Order exists and is still active
                 if (repository.getOrder(save.id()).isPresent()) {
                     var order = new Order(
                             repository.orderId(),
-                            save.name(),
-                            save.amount(),
-                            save.date(),
-                            save.medication(),
                             save.supplier(),
-                            save.compartment()
+                            save.amount(),
+                            save.price()
                     );
                     repository.save(order);
                     yield order;
                 } else {
-                    throw new IllegalArgumentException("Invalid Order reference");
+                    throw new IllegalArgumentException("Invalid khApo.Order reference");
                 }
             }
             case Order.SendOrder send -> {
-                // Ensure that the referenced Order exists and is still active
+                // Ensure that the referenced khApo.Order exists and is still active
                 if (repository.getOrder(send.id()).isPresent()) {
                     // i want that you send the order to the supplier
                     var order = new Order(
                             repository.orderId(),
-                            send.name(),
-                            send.amount(),
-                            new Date(),
-                            send.medication(),
                             send.supplier(),
-                            send.compartment()
+                            send.amount(),
+                            send.price()
                     );
                     repository.save(order);
                     yield order;
 
                 } else {
-                    throw new IllegalArgumentException("Invalid Order reference");
+                    throw new IllegalArgumentException("Invalid khApo.Order reference");
                 }
 
 
             }
             case Order.DeleteOrder delete -> {
                 var deletedOrder = repository.getOrder(delete.id())
-                        .orElseThrow(() -> new IllegalArgumentException("Invalid Order ID"));
+                        .orElseThrow(() -> new IllegalArgumentException("Invalid khApo.Order ID"));
                 repository.delete(delete.id());
                 yield deletedOrder;
             }
@@ -154,11 +149,10 @@ final class PharmacyServiceImpl implements PharmacyService {
 
                 var orderitem = new Orderitem(
                         repository.orderitemId(),
+                        add.status(),
                         add.amount(),
                         add.medication(),
-                        add.status(),
-                        add.order(),
-                        add.note()
+                        add.order()
                 );
                 repository.save(orderitem);
                 yield orderitem;
