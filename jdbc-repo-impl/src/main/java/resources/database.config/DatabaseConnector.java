@@ -396,18 +396,6 @@ public class DatabaseConnector implements Repository {
         }
     }
 
-/* brauchen wir das?
-    @Override
-    public void deleteStock(Id<Stock> id) {
-        String sql = "DELETE FROM Stock WHERE id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, id.value());
-            pstmt.executeUpdate();
-        }
-    }
-*/  
-    
-
 
 
     @Override
@@ -540,23 +528,6 @@ public List<Orderitem> get(Orderitem.Filter filter) {
         }
 
         return orderitems;
-    } catch (SQLException e) {
-        throw new RuntimeException(e);
-    }
-}
-
-
-public List<Compartment> getCompartmentsWithMedication() {
-    String query = "SELECT * FROM Compartment WHERE medication_id IS NOT NULL";
-
-    try (var resultSet = conn.createStatement().executeQuery(query)) {
-        List<Compartment> compartments = new ArrayList<>();
-
-        while (resultSet.next()) {
-            compartments.add(readCompartment(resultSet));
-        }
-
-        return compartments;
     } catch (SQLException e) {
         throw new RuntimeException(e);
     }
