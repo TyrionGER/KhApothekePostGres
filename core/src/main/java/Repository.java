@@ -8,7 +8,7 @@ public interface Repository {
 
     Optional<Compartment> getCompartment(Id<Compartment> id);
 
-    void save(Stock stck) throws Exception;
+    void save(Stock stock) throws SQLException;
     Optional<Stock> getStock(Id<Stock> id);
 
     void delete(Id<Order> id);
@@ -18,11 +18,11 @@ public interface Repository {
 
     Id<Compartment> compartmentId();
 
-    void save(Compartment com) throws Exception;
+    void save(Compartment compartment) throws SQLException;
 
     List<Compartment> get(Compartment.Filter filter);
 
-    void save(Orderitem ordi) throws Exception;
+    void save(Orderitem orderitem) throws SQLException;
 
     List<Orderitem> get(Orderitem.Filter filter);
 
@@ -30,7 +30,7 @@ public interface Repository {
     Id<Orderitem> orderitemId();
     Optional<Orderitem> getOrderitem(Id<Orderitem> id);
 
-    void save(Order ord) throws Exception;
+    void save(Order order) throws SQLException;
 
     List<Order> get(Order.Filter filter);
 
