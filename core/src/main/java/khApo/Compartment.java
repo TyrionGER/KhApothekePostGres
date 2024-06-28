@@ -7,7 +7,7 @@ import java.util.Optional;
 public record Compartment(
         Id <Compartment>id,
         int row,
-        String column) {
+        String column_position) {
 
     Compartment updateWith(
             int newrow,

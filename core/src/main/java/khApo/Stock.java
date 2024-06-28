@@ -6,10 +6,8 @@ import java.util.Optional;
 
 public record Stock(
         Id<Stock> id,
-        String name,
         int amount,
         Date expirationDate,
-        String note,
 
         Reference<Medication> medication,
         Reference<Compartment> compartment) {
@@ -22,10 +20,8 @@ public record Stock(
     ) {
         return new Stock(
                 this.id,
-                newname,
                 newamount,
                 newdate,
-                newnote,
                 this.medication,
                 this.compartment
         );
