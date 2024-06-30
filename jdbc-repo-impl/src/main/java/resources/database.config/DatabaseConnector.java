@@ -7,7 +7,6 @@ import khApo.*;
 
 import static resources.database.config.SQL.*;
 
-
 public class DatabaseConnector implements Repository {
     private final Connection conn;
     private static final String DB_URL = "jdbc:postgresql://localhost:5432/KhApoDB";
@@ -25,9 +24,7 @@ public class DatabaseConnector implements Repository {
             );
 
             var connector = new DatabaseConnector(conn);
-
             connector.setup();
-
             return connector;
 
         } catch (SQLException e) {
@@ -120,16 +117,52 @@ public class DatabaseConnector implements Repository {
             stmt.execute(CREATE_TABLE_STOCK);
             stmt.execute(CREATE_TABLE_ORDER);
             stmt.execute(CREATE_TABLE_ORDERITEM);
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        // Insert example records
+
         try (var stmt = conn.createStatement()) {
-            stmt.executeUpdate("INSERT INTO Medication (id, displayname, atc) VALUES ('med123', 'DisplayName', 123456)");
-            stmt.executeUpdate("INSERT INTO Supplier (id, name, address, mail, telefone) VALUES ('supplier123', 'SupplierName', 'Address', 'email@example.com', '123456789')");
+            // Insert Medication data
+            stmt.executeUpdate("INSERT INTO Medication (id, displayname, atc) VALUES ('med123', 'Medication1', 123456)");
+            stmt.executeUpdate("INSERT INTO Medication (id, displayname, atc) VALUES ('med124', 'Medication2', 123457)");
+            stmt.executeUpdate("INSERT INTO Medication (id, displayname, atc) VALUES ('med125', 'Medication3', 123458)");
+            stmt.executeUpdate("INSERT INTO Medication (id, displayname, atc) VALUES ('med126', 'Medication4', 123459)");
+            stmt.executeUpdate("INSERT INTO Medication (id, displayname, atc) VALUES ('med127', 'Medication5', 123460)");
+
+            // Insert Supplier data
+            stmt.executeUpdate("INSERT INTO Supplier (id, name, address, mail, telefone) VALUES ('supplier123', 'Supplier1', 'Address1', 'email1@example.com', '123456789')");
+            stmt.executeUpdate("INSERT INTO Supplier (id, name, address, mail, telefone) VALUES ('supplier124', 'Supplier2', 'Address2', 'email2@example.com', '987654321')");
+            stmt.executeUpdate("INSERT INTO Supplier (id, name, address, mail, telefone) VALUES ('supplier125', 'Supplier3', 'Address3', 'email3@example.com', '123123123')");
+            stmt.executeUpdate("INSERT INTO Supplier (id, name, address, mail, telefone) VALUES ('supplier126', 'Supplier4', 'Address4', 'email4@example.com', '321321321')");
+            stmt.executeUpdate("INSERT INTO Supplier (id, name, address, mail, telefone) VALUES ('supplier127', 'Supplier5', 'Address5', 'email5@example.com', '456456456')");
+
+            // Insert Compartment data
             stmt.executeUpdate("INSERT INTO Compartment (id, row, column_position) VALUES ('comp123', 1, 'A')");
+            stmt.executeUpdate("INSERT INTO Compartment (id, row, column_position) VALUES ('comp124', 2, 'B')");
+            stmt.executeUpdate("INSERT INTO Compartment (id, row, column_position) VALUES ('comp125', 3, 'C')");
+            stmt.executeUpdate("INSERT INTO Compartment (id, row, column_position) VALUES ('comp126', 4, 'D')");
+            stmt.executeUpdate("INSERT INTO Compartment (id, row, column_position) VALUES ('comp127', 5, 'E')");
+
+            // Insert Stock data
+            stmt.executeUpdate("INSERT INTO Stock (id, amount, expirationdate, medication_id, compartment_id) VALUES ('stock123', 10, '2023-12-31', 'med123', 'comp123')");
+            stmt.executeUpdate("INSERT INTO Stock (id, amount, expirationdate, medication_id, compartment_id) VALUES ('stock124', 5, '2023-11-30', 'med124', 'comp124')");
+            stmt.executeUpdate("INSERT INTO Stock (id, amount, expirationdate, medication_id, compartment_id) VALUES ('stock125', 20, '2024-01-15', 'med125', 'comp125')");
+            stmt.executeUpdate("INSERT INTO Stock (id, amount, expirationdate, medication_id, compartment_id) VALUES ('stock126', 15, '2023-10-20', 'med126', 'comp126')");
+            stmt.executeUpdate("INSERT INTO Stock (id, amount, expirationdate, medication_id, compartment_id) VALUES ('stock127', 25, '2024-03-10', 'med127', 'comp127')");
+
+            // Insert Order data
             stmt.executeUpdate("INSERT INTO \"Order\" (id, supplier_id, amount, price) VALUES ('order123', 'supplier123', 100, 50.0)");
+            stmt.executeUpdate("INSERT INTO \"Order\" (id, supplier_id, amount, price) VALUES ('order124', 'supplier124', 50, 25.0)");
+            stmt.executeUpdate("INSERT INTO \"Order\" (id, supplier_id, amount, price) VALUES ('order125', 'supplier125', 75, 37.5)");
+            stmt.executeUpdate("INSERT INTO \"Order\" (id, supplier_id, amount, price) VALUES ('order126', 'supplier126', 200, 100.0)");
+            stmt.executeUpdate("INSERT INTO \"Order\" (id, supplier_id, amount, price) VALUES ('order127', 'supplier127', 150, 75.0)");
+
+            // Insert Orderitem data
+            stmt.executeUpdate("INSERT INTO Orderitem (id, status, amount, medication_id, order_id) VALUES ('orderitem123', 'IN_BEARBEITUNG', 10, 'med123', 'order123')");
+            stmt.executeUpdate("INSERT INTO Orderitem (id, status, amount, medication_id, order_id) VALUES ('orderitem124', 'BESTELLUNG_AUFGEGEBEN', 5, 'med124', 'order124')");
+            stmt.executeUpdate("INSERT INTO Orderitem (id, status, amount, medication_id, order_id) VALUES ('orderitem125', 'BESTELLUNG_AKZEPTIERT', 15, 'med125', 'order125')");
+            stmt.executeUpdate("INSERT INTO Orderitem (id, status, amount, medication_id, order_id) VALUES ('orderitem126', 'WIRD_GELIEFERT', 20, 'med126', 'order126')");
+            stmt.executeUpdate("INSERT INTO Orderitem (id, status, amount, medication_id, order_id) VALUES ('orderitem127', 'ANGEKOMMEN', 25, 'med127', 'order127')");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -431,7 +464,7 @@ public class DatabaseConnector implements Repository {
     @Override
     public List<Compartment> get(Compartment.Filter filter) {
         var query = SQL.SELECT("*")
-                .FROM("khApo.Compartment")
+                .FROM("Compartment")
                 .ORDER_BY("id");
 
         filter.row().ifPresent(
@@ -458,7 +491,7 @@ public class DatabaseConnector implements Repository {
     public List<Order> get(Order.Filter filter) {
         var query = SELECT("*")
                 .FROM("\"Order\"")
-                .ORDER_BY("date");
+                .ORDER_BY("price");
 
         filter.supplier().ifPresent(
                 ref -> query.WHERE("supplier_id", ref.id().value()));
@@ -480,10 +513,10 @@ public class DatabaseConnector implements Repository {
 @Override
 public List<Stock> get(Stock.Filter filter) {
     var query = SQL.SELECT("*")
-        .FROM("khApo.Stock")
-        .ORDER_BY("date");
+        .FROM("Stock")
+        .ORDER_BY("expirationdate");
     filter.compartment().ifPresent(
-            ref -> query.WHERE("compartment", ref.id().value()));
+            ref -> query.WHERE("compartment_id", ref.id().value()));
 
     filter.amount().ifPresent(
             ref -> query.WHERE("amount", ref.id().value()));
@@ -511,7 +544,7 @@ public List<Stock> get(Stock.Filter filter) {
 @Override
 public List<Orderitem> get(Orderitem.Filter filter) {
     var query = SQL.SELECT("*")
-        .FROM("khApo.Orderitem")
+        .FROM("Orderitem")
         .ORDER_BY("id");
 
     filter.order().ifPresent(
