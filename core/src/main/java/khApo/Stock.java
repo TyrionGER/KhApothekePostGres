@@ -15,8 +15,7 @@ public record Stock(
     Stock updateWith(
             String newname,
             int newamount,
-            Date newdate,
-            String newnote
+            Date newdate
     ) {
         return new Stock(
                 this.id,

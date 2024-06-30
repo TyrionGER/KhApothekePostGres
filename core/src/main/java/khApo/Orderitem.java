@@ -33,8 +33,7 @@ public record Orderitem(
 
     Orderitem updateWith(
             int newamount,
-            status newstatus,
-            String newnote
+            status newstatus
     ) {
         return new Orderitem(
                 this.id,

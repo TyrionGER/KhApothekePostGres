@@ -121,8 +121,7 @@ final class PharmacyServiceImpl implements PharmacyService {
                         .updateWith(
                                 update.name(),
                                 update.amount(),
-                                update.date(),
-                                update.note()
+                                update.date()
                         );
                 repository.save(updatestock);
                 yield updatestock;
@@ -138,8 +137,7 @@ final class PharmacyServiceImpl implements PharmacyService {
                         .orElseThrow(() -> new IllegalArgumentException("Invalid Message ID"))
                         .updateWith(
                                 update.amount(),
-                                update.status(),
-                                update.note()
+                                update.status()
                         );
                 repository.save(updateorderitem);
                 yield updateorderitem;
